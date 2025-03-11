@@ -18,7 +18,7 @@ jobs:
         run: ls -la  # Lists all files including hidden ones
 
       - name: Checkout repository
-        uses: viveena30/checkout_to_avoid_submodules@467bcfa1ef654f59f69a039fb10b4a419f8e677d
+        uses: viveena30/checkout_to_avoid_submodules@working
         with:
           submodulesCSV: true
 
