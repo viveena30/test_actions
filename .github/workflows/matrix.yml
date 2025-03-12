@@ -1,41 +1,35 @@
 name: Checkout Repositories
 on: 
   workflow_dispatch:
+
 jobs:
   generate-matrix:
     runs-on: ubuntu-latest
     outputs:
-      matrix-data: ${{ steps.convert-csv.outputs.matrix }}
+      matrix-data: ${{ steps.prepare-matrix.outputs.matrix-data }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
       - name: Convert CSV to JSON
-        id: convert-csv
+        id: prepare-matrix
         shell: bash
         run: |
           csv_file="BranchSwitchListTest.csv"
           matrix_json="{\"include\":["
           first_line=true
-  
+
           while IFS=, read -r repository path ref; do
             if [ "$first_line" = true ]; then
               first_line=false
               continue  # Skip the header line
             fi
-            
-            # Append to the matrix JSON string
-            matrix_json="${matrix_json}{\"repo\":\"$repo\",\"ref\":\"$ref\",\"path\":\"$path\"},"
+
+            matrix_json="${matrix_json}{\"repo\":\"$repo\",\"path\":\"$path\",\"ref\":\"$ref\"},"
           done < "$csv_file"
-  
-          # # Remove the last comma and close the JSON array
-          # matrix_json="${matrix_json%,}]}"
-          
-          # # Save the matrix JSON to the environment
-          # echo "matrix-data=$matrix_json" >> $GITHUB_ENV
 
           matrix_json="${matrix_json%,}]}"
-          echo "::set-output name=matrix-data::$matrix_json"
+          echo "matrix-data=${matrix_json}" >> $GITHUB_OUTPUT
 
   checkout:
     runs-on: ubuntu-latest
@@ -46,6 +40,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
         with:
-          repository: ${{ matrix.repository }}
+          repository: ${{ matrix.repo }}
           path: ${{ matrix.path }}
           ref: ${{ matrix.ref }}
