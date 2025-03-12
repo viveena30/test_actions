@@ -68,30 +68,33 @@ jobs:
         id: set-matrix
         run: |
           csv_file="BranchSwitchListTest.csv"
-          # Read the CSV file and create a JSON array for the matrix
           echo "Reading CSV file: ${csv_file}"
           
           # Create a JSON array from the CSV (skipping header)
           REPOS_JSON="["
           FIRST=true
-          tail -n +2 ${csv_file} | while IFS=, read -r repo ref path; do
+          
+          while IFS=, read -r repo ref path; do
             # Remove any quotes and trim whitespace
             repo=$(echo "$repo" | tr -d '"' | xargs)
             ref=$(echo "$ref" | tr -d '"' | xargs)
             path=$(echo "$path" | tr -d '"' | xargs)
             
-            if [ "$FIRST" = true ]; then
-              FIRST=false
-            else
-              REPOS_JSON="${REPOS_JSON},"
+            if [ -n "$repo" ] && [ -n "$ref" ] && [ -n "$path" ]; then  # Check if values are not empty
+              if [ "$FIRST" = true ]; then
+                FIRST=false
+              else
+                REPOS_JSON="${REPOS_JSON},"
+              fi
+
+              REPOS_JSON="${REPOS_JSON}{\"repo\":\"${repo}\",\"ref\":\"${ref}\",\"path\":\"${path}\"}"
             fi
-            
-            REPOS_JSON="${REPOS_JSON}{\"repo\":\"${repo}\",\"ref\":\"${ref}\",\"path\":\"${path}\"}"
-          done
+          done < <(tail -n +2 ${csv_file})
           
           REPOS_JSON="${REPOS_JSON}]"
           echo "matrix=${REPOS_JSON}" >> $GITHUB_OUTPUT
           echo "Created matrix: ${REPOS_JSON}"
+
 
   checkout-repos:
     needs: read-csv
