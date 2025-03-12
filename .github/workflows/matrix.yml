@@ -19,21 +19,19 @@ jobs:
 
           csv_file = 'BranchSwitchListTest.csv'
           matrix = []
-
           with open(csv_file, mode='r') as file:
-              csv_reader = csv.DictReader(file)
+              csv_reader = csv.reader(file)
+              next(csv_reader)  # Skip the header line
+              
               for row in csv_reader:
-                  matrix.append({
-                      'repository': row['repository'],
-                      'path': row['path'],
-                      'ref': row['ref']
-                  })
-
-          with open('matrix.json', 'w') as json_file:
-              json.dump({"include": matrix}, json_file)
+                  if len(row) == 3:  # Ensure the row has all required columns
+                      matrix.append({
+                          'repository': row[0],
+                          'path': row[1],
+                          'ref': row[2]
+                      })
           
           print(f"::set-output name=matrix::{json.dumps({'include': matrix})}")
-
   checkout:
     runs-on: ubuntu-latest
     needs: generate-matrix
