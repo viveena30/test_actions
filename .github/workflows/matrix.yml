@@ -42,5 +42,5 @@ jobs:
         uses: viveena30/checkout_test@main
         with:
           repository: ${{ matrix.repo-matrix.repo }}
-          path: ${{ matrix.repo-matrix.path }}
           ref: ${{ matrix.repo-matrix.ref }}
+          path: ${{ matrix.repo-matrix.path }}
