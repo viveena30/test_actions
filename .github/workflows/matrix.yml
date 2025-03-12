@@ -15,6 +15,7 @@ jobs:
         shell: python
         run: |
           import csv, json
+          import os
           csv_file = 'BranchSwitchListTest.csv'
           matrix = []
           with open(csv_file, mode='r') as file:
