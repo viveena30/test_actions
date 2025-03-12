@@ -25,7 +25,7 @@ jobs:
             fi
             
             # Append to the matrix JSON string
-            matrix_json="${matrix_json}{\"repository\":\"$repository\",\"ref\":\"$ref\",\"path\":\"$path\"},"
+            matrix_json="${matrix_json}{\"repo\":\"$repo\",\"ref\":\"$ref\",\"path\":\"$path\"},"
           done < "$csv_file"
   
           # Remove the last comma and close the JSON array
@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: generate-matrix
     strategy:
-      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix-data).include }}
+      matrix: ${{ fromJson(env.matrix-data).include }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
