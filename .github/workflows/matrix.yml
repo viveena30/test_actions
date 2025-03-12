@@ -29,8 +29,8 @@ jobs:
           matrix_json = json.dumps({"include": matrix})
           
           # Save the matrix as an output of this step
-          print(f"::set-output name=matrix::{matrix_json}")
-
+          # print(f"::set-output name=matrix::{matrix_json}")
+          echo "matrix-data=${matrix_json}" >> $GITHUB_ENV
   checkout:
     runs-on: ubuntu-latest
     needs: generate-matrix
