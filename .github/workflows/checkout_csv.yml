@@ -1,0 +1,79 @@
+name: Checkout Repositories from CSV
+on:
+  workflow_dispatch:
+jobs:
+  read-csv:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout main repository
+        uses: actions/checkout@v3
+        
+      - name: Read CSV and create matrix
+        id: set-matrix
+        run: |
+          csv_file="BranchSwitchListTest.csv"
+          echo "Reading CSV file: ${csv_file}"
+          
+          # Create a JSON array from the CSV (skipping header)
+          REPOS_JSON="["
+          FIRST=true
+          
+          while IFS=, read -r repo ref path; do
+            repo=$(echo "$repo" | tr -d '"' | xargs)
+            ref=$(echo "$ref" | tr -d '"' | xargs)
+            path=$(echo "$path" | tr -d '"' | xargs)
+            
+            if [ -n "$repo" ] && [ -n "$ref" ] && [ -n "$path" ]; then
+              if [ "$FIRST" = true ]; then
+                FIRST=false
+              else
+                REPOS_JSON="${REPOS_JSON},"
+              fi
+              REPOS_JSON="${REPOS_JSON}{\"repo\":\"${repo}\",\"ref\":\"${ref}\",\"path\":\"${path}\"}"
+            fi
+          done < <(tail -n +2 ${csv_file})
+          
+          REPOS_JSON="${REPOS_JSON}]"
+          echo "matrix=${REPOS_JSON}" >> $GITHUB_OUTPUT
+          echo "Created matrix: ${REPOS_JSON}"
+  
+  checkout-repos:
+    needs: read-csv
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        repo: ${{ fromJson(needs.read-csv.outputs.matrix) }}
+      fail-fast: false
+    steps:
+      - name: Checkout main repository
+        uses: actions/checkout@v3
+      
+      - name: Create temporary folder for repos
+        run: mkdir -p /tmp/checked_out_repos
+      
+      - name: Checkout repository using custom action
+        uses: viveena30/checkout_test@main
+        with:
+          repository: ${{ matrix.repo.repo }}
+          ref: ${{ matrix.repo.ref }}
+          path: /tmp/checked_out_repos/${{ matrix.repo.path }}
+      
+      - name: Verify checkout
+        run: |
+          echo "Checking contents of /tmp/checked_out_repos/${{ matrix.repo.path }}"
+          ls -l /tmp/checked_out_repos/${{ matrix.repo.path}}
+
+  after-checkout-repos:
+    needs: checkout-repos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all checked out repos
+        run: |
+          echo "Checking contents of /tmp/checked_out_repos"
+          ls -l /tmp/checked_out_repos
+
+      - name: Cleanup (Delete repos after workflow completion)
+        if: always()
+        run: rm -rf /tmp/checked_out_repos
