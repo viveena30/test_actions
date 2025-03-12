@@ -25,8 +25,8 @@ jobs:
               for row in csv_reader:
                   matrix.append({
                       'repository': row['repo'],
-                      'ref': row['ref']
-                      'path': row['path'],
+                      'ref': row['ref'],
+                      'path': row['path']
                   })
 
           with open('matrix.json', 'w') as json_file:
