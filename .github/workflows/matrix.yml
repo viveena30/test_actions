@@ -16,7 +16,7 @@ jobs:
         shell: bash
         run: |
           csv_file="BranchSwitchListTest.csv"
-          matrix_json="{\"include\":["
+          matrix_json="["
           first_line=true
 
           while IFS=, read -r repository path ref; do
@@ -28,18 +28,19 @@ jobs:
             matrix_json="${matrix_json}{\"repo\":\"$repo\",\"path\":\"$path\",\"ref\":\"$ref\"},"
           done < "$csv_file"
 
-          matrix_json="${matrix_json%,}]}"
-          echo "matrix-data=${matrix_json}" >> $GITHUB_OUTPUT
+          matrix_json="${matrix_json%,}]"
+          echo "matrix-data=$matrix_json" >> $GITHUB_OUTPUT
 
   checkout:
     runs-on: ubuntu-latest
     needs: generate-matrix
     strategy:
-      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix-data).include }}
+      matrix: 
+        repo-matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix-data) }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
         with:
-          repository: ${{ matrix.repo }}
-          path: ${{ matrix.path }}
-          ref: ${{ matrix.ref }}
+          repository: ${{ matrix.repo-matrix.repo }}
+          path: ${{ matrix.repo-matrix.path }}
+          ref: ${{ matrix.repo-matrix.ref }}
