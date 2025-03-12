@@ -113,4 +113,6 @@ jobs:
           repository: ${{ matrix.repo.repo }}
           ref: ${{ matrix.repo.ref }}
           path: ${{ matrix.repo.path }}
-
+      
+      - name: checking dirs
+        run: ls -l
