@@ -12,30 +12,28 @@ jobs:
 
       - name: Convert CSV to JSON
         id: convert-csv
-        shell: python
+        shell: bash
         run: |
-          import csv, json
-          import os
-          csv_file = 'BranchSwitchListTest.csv'
-          matrix = []
-          with open(csv_file, mode='r') as file:
-              csv_reader = csv.DictReader(file)
-              for row in csv_reader:
-                  matrix.append({
-                      'repository': row['repo'],
-                      'ref': row['ref'],
-                      'path': row['path']
-                  })
-
-          matrix_json = json.dumps({"include": matrix})
+          csv_file="BranchSwitchListTest.csv"
+          matrix_json="{\"include\":["
+          first_line=true
+  
+          while IFS=, read -r repository path ref; do
+            if [ "$first_line" = true ]; then
+              first_line=false
+              continue  # Skip the header line
+            fi
+            
+            # Append to the matrix JSON string
+            matrix_json="${matrix_json}{\"repository\":\"$repository\",\"ref\":\"$ref\",\"path\":\"$path\"},"
+          done < "$csv_file"
+  
+          # Remove the last comma and close the JSON array
+          matrix_json="${matrix_json%,}]}"
           
-          # Save the matrix as an output of this step
-          # print(f"::set-output name=matrix::{matrix_json}")
-          # echo "matrix-data=${matrix_json}" >> $GITHUB_ENV
+          # Save the matrix JSON to the environment
+          echo "matrix-data=$matrix_json" >> $GITHUB_ENV
 
-          # Save the matrix as an environment variable for output
-          with open(os.environ['GITHUB_ENV'], 'a') as env_file:
-              env_file.write(f"matrix-data={matrix_json}\n")
   checkout:
     runs-on: ubuntu-latest
     needs: generate-matrix
