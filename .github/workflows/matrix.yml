@@ -62,14 +62,14 @@ jobs:
       - name: checking dirs
         run: ls -l
 
-      - name: checking dirs
-        run: |
-          pushd network_intrusion_detection
-                  ls -a
-          popd
-          pushd bengaluru_house_price_prediction
-                  ls -a
-          popd
+      # - name: checking dirs
+      #   run: |
+      #     pushd network_intrusion_detection
+      #             ls -a
+      #     popd
+      #     pushd bengaluru_house_price_prediction
+      #             ls -a
+      #     popd
         
   after-checkout-repos:
     needs: checkout-repos
