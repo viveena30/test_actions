@@ -25,7 +25,7 @@ jobs:
               continue  # Skip the header line
             fi
 
-            matrix_json="${matrix_json}{\"repo\":\"$repo\",\"path\":\"$path\",\"ref\":\"$ref\"},"
+            matrix_json="${matrix_json}{\"repo\":\"$repo\",\"ref\":\"$ref\",\"path\":\"$path\"},"
           done < "$csv_file"
 
           matrix_json="${matrix_json%,}]"
