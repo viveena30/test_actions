@@ -8,7 +8,7 @@ jobs:
       matrix-data: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Convert CSV to JSON
         shell: python
@@ -24,9 +24,9 @@ jobs:
               next(csv_reader)
               for row in csv_reader:
                   matrix.append({
-                      'repository': row['repository'],
-                      'path': row['path'],
+                      'repository': row['repo'],
                       'ref': row['ref']
+                      'path': row['path'],
                   })
 
           with open('matrix.json', 'w') as json_file:
