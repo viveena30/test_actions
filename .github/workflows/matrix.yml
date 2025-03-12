@@ -1,49 +1,113 @@
-name: Checkout Repositories
-on: 
+# name: Checkout Repositories
+# on: 
+#   workflow_dispatch:
+
+# jobs:
+#   generate-matrix:
+#     runs-on: ubuntu-latest
+#     outputs:
+#       matrix-data: ${{ steps.prepare-matrix.outputs.matrix-data }}
+#     steps:
+#       - name: Checkout Code
+#         uses: actions/checkout@v3
+
+#       - name: Convert CSV to JSON
+#         id: prepare-matrix
+#         shell: bash
+#         run: |
+#           csv_file="BranchSwitchListTest.csv"
+#           matrix_json="["
+#           first_line=true
+
+#           while IFS=, read -r repository path ref; do
+#             if [ "$first_line" = true ]; then
+#               first_line=false
+#               continue  # Skip the header line
+#             fi
+
+#             matrix_json="${matrix_json}{\"repo\":\"$repo\",\"ref\":\"$ref\",\"path\":\"$path\"},"
+#           done < "$csv_file"
+
+#           matrix_json="${matrix_json%,}]"
+#           echo "matrix-data=$matrix_json" >> $GITHUB_OUTPUT
+#       - name: Debug Matrix
+#         run: echo "${{ toJson(matrix.repo-matrix) }}"
+
+        
+#   checkout:
+#     runs-on: ubuntu-latest
+#     needs: generate-matrix
+#     strategy:
+#       matrix: 
+#         repo-matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix-data) }}
+#     steps:
+#       - name: Checkout Repository
+#         uses: viveena30/checkout_test@main
+#         with:
+#           repository: ${{ matrix.repo-matrix.repo }}
+#           ref: ${{ matrix.repo-matrix.ref }}
+#           path: ${{ matrix.repo-matrix.path }}
+
+
+
+name: Checkout Repositories from CSV
+
+on:
   workflow_dispatch:
 
 jobs:
-  generate-matrix:
+  read-csv:
     runs-on: ubuntu-latest
     outputs:
-      matrix-data: ${{ steps.prepare-matrix.outputs.matrix-data }}
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - name: Checkout Code
+      - name: Checkout main repository
         uses: actions/checkout@v3
-
-      - name: Convert CSV to JSON
-        id: prepare-matrix
-        shell: bash
+        
+      - name: Read CSV and create matrix
+        id: set-matrix
         run: |
           csv_file="BranchSwitchListTest.csv"
-          matrix_json="["
-          first_line=true
-
-          while IFS=, read -r repository path ref; do
-            if [ "$first_line" = true ]; then
-              first_line=false
-              continue  # Skip the header line
+          # Read the CSV file and create a JSON array for the matrix
+          echo "Reading CSV file: ${csv_file}"
+          
+          # Create a JSON array from the CSV (skipping header)
+          REPOS_JSON="["
+          FIRST=true
+          tail -n +2 ${csv_file} | while IFS=, read -r repo ref path; do
+            # Remove any quotes and trim whitespace
+            repo=$(echo "$repo" | tr -d '"' | xargs)
+            ref=$(echo "$ref" | tr -d '"' | xargs)
+            path=$(echo "$path" | tr -d '"' | xargs)
+            
+            if [ "$FIRST" = true ]; then
+              FIRST=false
+            else
+              REPOS_JSON="${REPOS_JSON},"
             fi
+            
+            REPOS_JSON="${REPOS_JSON}{\"repo\":\"${repo}\",\"ref\":\"${ref}\",\"path\":\"${path}\"}"
+          done
+          
+          REPOS_JSON="${REPOS_JSON}]"
+          echo "matrix=${REPOS_JSON}" >> $GITHUB_OUTPUT
+          echo "Created matrix: ${REPOS_JSON}"
 
-            matrix_json="${matrix_json}{\"repo\":\"$repo\",\"ref\":\"$ref\",\"path\":\"$path\"},"
-          done < "$csv_file"
-
-          matrix_json="${matrix_json%,}]"
-          echo "matrix-data=$matrix_json" >> $GITHUB_OUTPUT
-      - name: Debug Matrix
-        run: echo "${{ toJson(matrix.repo-matrix) }}"
-
-        
-  checkout:
+  checkout-repos:
+    needs: read-csv
     runs-on: ubuntu-latest
-    needs: generate-matrix
     strategy:
-      matrix: 
-        repo-matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix-data) }}
+      matrix:
+        repo: ${{ fromJson(needs.read-csv.outputs.matrix) }}
+      fail-fast: false
     steps:
-      - name: Checkout Repository
+      - name: Checkout main repository
+        uses: actions/checkout@v3
+      
+      - name: Checkout repository using custom action
         uses: viveena30/checkout_test@main
         with:
-          repository: ${{ matrix.repo-matrix.repo }}
-          ref: ${{ matrix.repo-matrix.ref }}
-          path: ${{ matrix.repo-matrix.path }}
+          repository: ${{ matrix.repo.repo }}
+          ref: ${{ matrix.repo.ref }}
+          path: ${{ matrix.repo.path }}
+
