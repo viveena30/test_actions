@@ -1,0 +1,47 @@
+name: Checkout Repositories
+on:
+  workflow_dispatch:
+jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix-data: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Convert CSV to JSON
+        id: convert-csv
+        run: |
+          import csv, json
+          import os
+
+          csv_file = 'BranchSwitchListTest.csv'
+          matrix = []
+
+          with open(csv_file, mode='r') as file:
+              csv_reader = csv.DictReader(file)
+              for row in csv_reader:
+                  matrix.append({
+                      'repository': row['repository'],
+                      'path': row['path'],
+                      'ref': row['ref']
+                  })
+
+          with open('matrix.json', 'w') as json_file:
+              json.dump({"include": matrix}, json_file)
+          
+          print(f"::set-output name=matrix::{json.dumps({'include': matrix})}")
+
+  checkout:
+    runs-on: ubuntu-latest
+    needs: generate-matrix
+    strategy:
+      matrix: ${{fromJson(needs.generate-matrix.outputs.matrix-data).include}}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ matrix.repository }}
+          path: ${{ matrix.path }}
+          ref: ${{ matrix.ref }}
