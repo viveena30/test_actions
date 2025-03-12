@@ -1,0 +1,43 @@
+name: Checkout Multiple Repositories
+
+on:
+  workflow_dispatch:
+
+jobs:
+  checkout-repos:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Main Repository
+        uses: actions/checkout@v3
+
+      - name: Read CSV file
+        id: read_csv
+        run: |
+          echo "repo,ref,path" > repos.csv
+          echo "viveena30/network_intrusion_detection,master,repo1" >> repos.csv
+
+      - name: Read and Checkout Repos
+        id: checkout_repos
+        run: |
+          while IFS="," read -r repo ref path; do
+            if [ "$repo" != "repo" ]; then
+              echo "Checking out $repo at $ref to $path"
+              echo "::group::Checkout $repo"
+              echo "repo: $repo, ref: $ref, path: $path"
+              echo "::endgroup::"
+            fi
+          done < repos.csv
+
+      - name: Perform Checkout
+        uses: viveena30/checkout_test@main
+        with:
+          repositories-csv: repos.csv
+
+  repo1-specific-job:
+    runs-on: ubuntu-latest
+    needs: checkout-repos
+    steps:
+      - name: Perform Action on repo1
+        run: |
+          echo "Performing specific step for repo1"
+          ls repo1
