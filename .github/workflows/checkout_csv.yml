@@ -1,4 +1,4 @@
-name: Checkout Repositories from CSV
+name: Checkout CSV
 on:
   workflow_dispatch:
 jobs:
