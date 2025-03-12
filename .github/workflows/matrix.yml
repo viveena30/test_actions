@@ -1,27 +1,27 @@
 name: Checkout Repositories
+
 on:
   workflow_dispatch:
+
 jobs:
   generate-matrix:
     runs-on: ubuntu-latest
     outputs:
-      matrix-data: ${{ steps.set-matrix.outputs.matrix }}
+      matrix-data: ${{ steps.convert-csv.outputs.matrix }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Convert CSV to JSON
-        shell: python
         id: convert-csv
         run: |
           import csv, json
-          import os
 
           csv_file = 'BranchSwitchListTest.csv'
           matrix = []
+
           with open(csv_file, mode='r') as file:
               csv_reader = csv.DictReader(file)
-              next(csv_reader)
               for row in csv_reader:
                   matrix.append({
                       'repository': row['repo'],
@@ -29,16 +29,19 @@ jobs:
                       'path': row['path']
                   })
 
+          matrix_json = json.dumps({"include": matrix})
+          # Save matrix to file for debugging
           with open('matrix.json', 'w') as json_file:
-              json.dump({"include": matrix}, json_file)
+              json_file.write(matrix_json)
           
-          print(f"::set-output name=matrix::{json.dumps({'include': matrix})}")
+          # Output the matrix using the new syntax
+          echo "matrix=${matrix_json}" >> $GITHUB_ENV
 
   checkout:
     runs-on: ubuntu-latest
     needs: generate-matrix
     strategy:
-      matrix: ${{fromJson(needs.generate-matrix.outputs.matrix-data).include}}
+      matrix: ${{ fromJson(env.matrix).include }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
